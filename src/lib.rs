@@ -130,11 +130,13 @@ mod interfaces;
 pub mod plugin;
 pub mod prelude;
 pub mod util;
+mod internal_util;
 
 use api::consts::VST_MAGIC;
 use api::{AEffect, HostCallbackProc};
 use cache::PluginCache;
 use plugin::{HostCallback, Plugin};
+use crate::internal_util::firewall;
 
 /// Exports the necessary symbols for the plugin to be used by a VST host.
 ///
@@ -166,6 +168,10 @@ macro_rules! plugin_main {
 /// Initializes a VST plugin and returns a raw pointer to an AEffect struct.
 #[doc(hidden)]
 pub fn main<T: Plugin>(callback: HostCallbackProc) -> *mut AEffect {
+    firewall(|| main_internal::<T>(callback)).unwrap_or(ptr::null_mut())
+}
+
+fn main_internal<T: Plugin>(callback: HostCallbackProc) -> *mut AEffect {
     // Initialize as much of the AEffect as we can before creating the plugin.
     // In particular, initialize all the function pointers, since initializing
     // these to zero is undefined behavior.

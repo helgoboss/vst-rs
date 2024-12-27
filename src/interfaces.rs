@@ -12,6 +12,7 @@ use crate::{
     editor::{Key, KeyCode, KnobMode, Rect},
     host::Host,
 };
+use crate::internal_util::firewall;
 
 /// Deprecated process function.
 pub extern "C" fn process_deprecated(
@@ -24,6 +25,15 @@ pub extern "C" fn process_deprecated(
 
 /// VST2.4 replacing function.
 pub extern "C" fn process_replacing(
+    effect: *mut AEffect,
+    raw_inputs: *const *const f32,
+    raw_outputs: *mut *mut f32,
+    samples: i32,
+) {
+    firewall(|| process_replacing_internal(effect, raw_inputs, raw_outputs, samples));
+}
+
+fn process_replacing_internal(
     effect: *mut AEffect,
     raw_inputs: *const *const f32,
     raw_outputs: *mut *mut f32,
@@ -45,6 +55,16 @@ pub extern "C" fn process_replacing_f64(
     raw_outputs: *mut *mut f64,
     samples: i32,
 ) {
+    firewall(|| process_replacing_f64_internal(effect, raw_inputs, raw_outputs, samples));
+}
+
+/// VST2.4 replacing function with `f64` values.
+fn process_replacing_f64_internal(
+    effect: *mut AEffect,
+    raw_inputs: *const *const f64,
+    raw_outputs: *mut *mut f64,
+    samples: i32,
+) {
     let plugin = unsafe { (*effect).get_plugin() };
     let info = unsafe { (*effect).get_info() };
     let (input_count, output_count) = (info.inputs as usize, info.outputs as usize);
@@ -55,11 +75,19 @@ pub extern "C" fn process_replacing_f64(
 
 /// VST2.4 set parameter function.
 pub extern "C" fn set_parameter(effect: *mut AEffect, index: i32, value: f32) {
+    firewall(|| set_parameter_internal(effect, index, value));
+}
+
+fn set_parameter_internal(effect: *mut AEffect, index: i32, value: f32) {
     unsafe { (*effect).get_params() }.set_parameter(index, value);
 }
 
 /// VST2.4 get parameter function.
 pub extern "C" fn get_parameter(effect: *mut AEffect, index: i32) -> f32 {
+    firewall(|| get_parameter_internal(effect, index)).unwrap_or(0.0)
+}
+
+fn get_parameter_internal(effect: *mut AEffect, index: i32) -> f32 {
     unsafe { (*effect).get_params() }.get_parameter(index)
 }
 
@@ -81,6 +109,17 @@ fn copy_string(dst: *mut c_void, src: &str, max: usize) -> isize {
 
 /// VST2.4 dispatch function. This function handles dispatching all opcodes to the VST plugin.
 pub extern "C" fn dispatch(
+    effect: *mut AEffect,
+    opcode: i32,
+    index: i32,
+    value: isize,
+    ptr: *mut c_void,
+    opt: f32,
+) -> isize {
+    firewall(|| dispatch_internal(effect, opcode, index, value, ptr, opt)).unwrap_or(0)
+}
+
+fn dispatch_internal(
     effect: *mut AEffect,
     opcode: i32,
     index: i32,
