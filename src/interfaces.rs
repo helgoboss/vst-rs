@@ -6,13 +6,13 @@ use std::cell::Cell;
 use std::os::raw::{c_char, c_void};
 use std::{mem, slice};
 
+use crate::internal_util::firewall;
 use crate::{
     api::{self, consts::*, AEffect, TimeInfo},
     buffer::AudioBuffer,
     editor::{Key, KeyCode, KnobMode, Rect},
     host::Host,
 };
-use crate::internal_util::firewall;
 
 /// Deprecated process function.
 pub extern "C" fn process_deprecated(
@@ -119,14 +119,7 @@ pub extern "C" fn dispatch(
     firewall(|| dispatch_internal(effect, opcode, index, value, ptr, opt)).unwrap_or(0)
 }
 
-fn dispatch_internal(
-    effect: *mut AEffect,
-    opcode: i32,
-    index: i32,
-    value: isize,
-    ptr: *mut c_void,
-    opt: f32,
-) -> isize {
+fn dispatch_internal(effect: *mut AEffect, opcode: i32, index: i32, value: isize, ptr: *mut c_void, opt: f32) -> isize {
     use crate::plugin::{CanDo, OpCode};
 
     // Convert passed in opcode to enum

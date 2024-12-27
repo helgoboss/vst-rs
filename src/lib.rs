@@ -127,16 +127,16 @@ pub mod editor;
 pub mod event;
 pub mod host;
 mod interfaces;
+mod internal_util;
 pub mod plugin;
 pub mod prelude;
 pub mod util;
-mod internal_util;
 
+use crate::internal_util::firewall;
 use api::consts::VST_MAGIC;
 use api::{AEffect, HostCallbackProc};
 use cache::PluginCache;
 use plugin::{HostCallback, Plugin};
-use crate::internal_util::firewall;
 
 /// Exports the necessary symbols for the plugin to be used by a VST host.
 ///
